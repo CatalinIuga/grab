@@ -1,5 +1,5 @@
-import { Buffer } from "jsr:@std/io/buffer";
-import { iterateReader } from "jsr:@std/io/iterate-reader";
+import { Buffer } from "@std/io/buffer";
+import { iterateReader } from "@std/io/iterate-reader";
 
 /**
  * Grabs a resource from the network. It uses a TCP connection to make HTTP/1.1 requests to the server.
