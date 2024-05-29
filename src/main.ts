@@ -1,15 +1,14 @@
 import { Buffer } from "@std/io/buffer";
 import { iterateReader } from "@std/io/iterate-reader";
-
 /**
  * Grabs a resource from the network. It uses a TCP connection to make HTTP/1.1 requests to the server.
  * It returns a Promise that resolves to the Response to that Request, whether it is successful or not.
- * @param input RequestInfo | URL
- * @param init
+ * @param input string | Request | URL
+ * @param init RequestInit
  */
 export async function grab(
   input: string | Request | URL,
-  init?: RequestInit
+  init?: RequestInit | undefined
 ): Promise<Response> {
   let url: URL;
 
