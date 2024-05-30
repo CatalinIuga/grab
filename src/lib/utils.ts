@@ -10,9 +10,17 @@ function getUrl(input: string | Request | URL): URL {
   return new URL(input.url);
 }
 
-async function bodyToString(body: BodyInit): Promise<string> {
-  // NOTE: This ones are not tested!!
+function isMultiPartFormData(body: BodyInit): boolean {
+  if (body instanceof FormData) {
+    const entries = [...body.entries()];
+    const isFile = entries.some(([, value]) => value instanceof File);
+    return isFile;
+  }
 
+  return false;
+}
+
+async function bodyToString(body: BodyInit): Promise<string> {
   if (body instanceof Blob) {
     const arrayBuffer = await body.arrayBuffer();
     return new TextDecoder().decode(arrayBuffer);
@@ -22,13 +30,39 @@ async function bodyToString(body: BodyInit): Promise<string> {
     return new TextDecoder().decode(body);
   }
 
-  // Damn... https://stackoverflow.com/questions/8659808/how-does-http-file-upload-work
-  // TODO: uhhhh, maybe implement this later
   if (body instanceof FormData) {
+    if (isMultiPartFormData(body)) {
+      const boundary = "GrabberBoundary";
+      const entries = [...body.entries()];
+
+      const parts = entries.map(async ([key, value]) => {
+        if (value instanceof File) {
+          const content = await value.text();
+          return (
+            `--${boundary}\r\n` +
+            `Content-Disposition: form-data; name="${key}"; filename="${value.name}"\r\n` +
+            `Content-Type: ${value.type}\r\n\r\n` +
+            `${content}\r\n`
+          );
+        }
+
+        return (
+          `--${boundary}\r\n` +
+          `Content-Disposition: form-data; name="${key}"\r\n\r\n` +
+          `${value}\r\n`
+        );
+      });
+
+      const partsString = await Promise.all(parts);
+
+      return partsString.join("") + `--${boundary}--\r\n`;
+    }
     const entries = [...body.entries()];
-    return entries
-      .map(([key, value]) => `${key}=${value}`)
-      .join("&");
+
+    return entries.map(([key, value]) =>
+      // @ts-expect-error FormData entries are always strings since we filter out files above
+      `${encodeURI(key)}=${encodeURI(value)}`
+    ).join("&");
   }
 
   if (body instanceof URLSearchParams) {
@@ -118,8 +152,20 @@ export async function buildRequestString(
   let bodyString = "";
   let headerString = "";
 
+  headers.append("Host", host);
+  headers.append("Connection", "close");
+
   if (body) {
     bodyString = await bodyToString(body);
+
+    if (isMultiPartFormData(body)) {
+      headers.append(
+        "Content-Type",
+        "multipart/form-data; boundary=GrabberBoundary",
+      );
+    } else if (body instanceof URLSearchParams || body instanceof FormData) {
+      headers.append("Content-Type", "application/x-www-form-urlencoded");
+    }
     headers.append("Content-Length", bodyString.length.toString());
   }
 
@@ -137,8 +183,6 @@ export async function buildRequestString(
 
   return (
     `${method} ${pathname} HTTP/1.1\r\n` +
-    `Host: ${host}\r\n` +
-    `Connection: close\r\n` +
     `${headerString}\r\n\r\n` +
     `${bodyString}\r\n`
   );
