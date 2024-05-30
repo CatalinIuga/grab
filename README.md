@@ -1,14 +1,14 @@
-# grab - Deno fech using HTTP/1.1
+# grab - Deno fetch using HTTP/1.1
 
-Just a simple Deno HTTP fetcher using HTTP/1.1. It uses Deno's built-in TCP and TLS connection to fetch the data from the server.
+Fetch using HTTP/1.1 in Deno. Because Deno's fetch uses HTTP/2 and some servers don't support it. Same API and types as the normal implementation (no Deno Client support yet).
 
 ## Features
 
-It's the same as fetch... but with HTTP/1.1. Don't expect any fancy stuff here.
+It's the same as fetch... but with HTTP/1.1. Don't expect any fancy stuff here. Heads's up, I've been too lazy to implement proper form data support.
 
 ## Contributing
 
-Feel free to open an issue or a pull request. Feel free to fork and modify the code. I'm open to suggestions and improvements.
+Feel free to open an issue or a pull request. Feel free to fork and modify the code.
 
 ## Usage
 
@@ -18,7 +18,3 @@ import { grab } from "https://deno.land/x/grab/mod.ts";
 const response = await grab("https://example.com");
 console.log(response);
 ```
-
-## License
-
-MIT
